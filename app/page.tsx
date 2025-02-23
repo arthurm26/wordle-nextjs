@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { generate } from "random-words";
 import { GameState, MatchStatus, MatchState, GuessState } from "@/app/types";
 import { Guess } from "@/app/components/Guess";
+import useKeyHandler from "./hooks/useKeyHandler";
 
 const maxNumGuesses = 6;
 
@@ -27,89 +28,95 @@ export default function Wordle() {
     maxNumGuesses: 6,
     status: MatchStatus.Playing,
   });
+  //   (event: KeyboardEvent) => {
+  //     if (event.key === "Backspace") {
+  //       setAttempts((prevAttempts) => {
+  //         const firstEmptyLetterIdx = prevAttempts[
+  //           currentGuess
+  //         ].letters.findIndex((idx) => idx.letter === "");
 
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === "Backspace") {
-        setAttempts((prevAttempts) => {
-          const firstEmptyLetterIdx = prevAttempts[
-            currentGuess
-          ].letters.findIndex((idx) => idx.letter === "");
+  //         const lastLetterIdx =
+  //           firstEmptyLetterIdx === -1 ? 4 : firstEmptyLetterIdx - 1;
 
-          const lastLetterIdx =
-            firstEmptyLetterIdx === -1 ? 4 : firstEmptyLetterIdx - 1;
+  //         const updatedCurrentGuess = prevAttempts[currentGuess].letters.map(
+  //           (letter, index) => {
+  //             if (lastLetterIdx === index) {
+  //               return { ...letter, letter: "" };
+  //             }
+  //             return letter;
+  //           },
+  //         );
+  //         return prevAttempts.map((attempt, index) =>
+  //           index === currentGuess
+  //             ? { ...attempt, letters: updatedCurrentGuess }
+  //             : attempt,
+  //         );
+  //       });
+  //     }
 
-          const updatedCurrentGuess = prevAttempts[currentGuess].letters.map(
-            (letter, index) => {
-              if (lastLetterIdx === index) {
-                return { ...letter, letter: "" };
-              }
-              return letter;
-            },
-          );
-          return prevAttempts.map((attempt, index) =>
-            index === currentGuess
-              ? { ...attempt, letters: updatedCurrentGuess }
-              : attempt,
-          );
-        });
-      }
+  //     if (event.key.match(/^[a-z]$/i)) {
+  //       setAttempts((prevAttempts) => {
+  //         const firstEmptyLetterIdx = prevAttempts[
+  //           currentGuess
+  //         ].letters.findIndex((idx) => idx.letter === "");
 
-      if (event.key.match(/^[a-z]$/i)) {
-        setAttempts((prevAttempts) => {
-          const firstEmptyLetterIdx = prevAttempts[
-            currentGuess
-          ].letters.findIndex((idx) => idx.letter === "");
+  //         const updatedCurrentGuess = prevAttempts[currentGuess].letters.map(
+  //           (letter, index) => {
+  //             if (firstEmptyLetterIdx == index) {
+  //               return { ...letter, letter: event.key.toUpperCase() };
+  //             }
+  //             return letter;
+  //           },
+  //         );
 
-          const updatedCurrentGuess = prevAttempts[currentGuess].letters.map(
-            (letter, index) => {
-              if (firstEmptyLetterIdx == index) {
-                return { ...letter, letter: event.key.toUpperCase() };
-              }
-              return letter;
-            },
-          );
+  //         return prevAttempts.map((attempt, index) =>
+  //           index === currentGuess
+  //             ? { ...attempt, letters: updatedCurrentGuess }
+  //             : attempt,
+  //         );
+  //       });
+  //       return;
+  //     }
 
-          return prevAttempts.map((attempt, index) =>
-            index === currentGuess
-              ? { ...attempt, letters: updatedCurrentGuess }
-              : attempt,
-          );
-        });
-        return;
-      }
+  //     if (attempts[currentGuess].letters.some((e) => e.letter === "")) return;
 
-      if (attempts[currentGuess].letters.some((e) => e.letter === "")) return;
+  //     if (event.key === "Enter") {
+  //       setAttempts((prevAttempts) => {
+  //         const updatedLetters = prevAttempts[currentGuess].letters.map(
+  //           (letter, index) => {
+  //             if (letter.letter === gameState.solution[index]) {
+  //               return { ...letter, match: MatchState.Correct };
+  //             }
+  //             if (!gameState.solution.includes(letter.letter)) {
+  //               return { ...letter, match: MatchState.Incorrect };
+  //             }
+  //             if (gameState.solution.includes(letter.letter)) {
+  //               return { ...letter, match: MatchState.Almost };
+  //             }
+  //             return { ...letter };
+  //           },
+  //         );
+  //         prevAttempts[currentGuess] = {
+  //           ...prevAttempts[currentGuess],
+  //           letters: updatedLetters,
+  //         };
+  //         return prevAttempts;
+  //       });
+  //       setCurrentGuess((prevCurrentGuess) => {
+  //         return (prevCurrentGuess += 1);
+  //       });
+  //     }
+  //   },
+  //   [gameState, attempts, currentGuess],
+  // );
 
-      if (event.key === "Enter") {
-        setAttempts((prevAttempts) => {
-          const updatedLetters = prevAttempts[currentGuess].letters.map(
-            (letter, index) => {
-              if (letter.letter === gameState.solution[index]) {
-                return { ...letter, match: MatchState.Correct };
-              }
-              if (!gameState.solution.includes(letter.letter)) {
-                return { ...letter, match: MatchState.Incorrect };
-              }
-              if (gameState.solution.includes(letter.letter)) {
-                return { ...letter, match: MatchState.Almost };
-              }
-              return { ...letter };
-            },
-          );
-          prevAttempts[currentGuess] = {
-            ...prevAttempts[currentGuess],
-            letters: updatedLetters,
-          };
-          return prevAttempts;
-        });
-        setCurrentGuess((prevCurrentGuess) => {
-          return (prevCurrentGuess += 1);
-        });
-      }
-    },
-    [gameState, attempts, currentGuess],
-  );
+  useKeyHandler({
+    setAttempts,
+    currentGuess,
+    gameState,
+    attempts,
+    setCurrentGuess,
+  });
 
   useEffect(() => {
     if (currentGuess === 0) return;
@@ -141,16 +148,14 @@ export default function Wordle() {
     setGameState((prev) => ({ ...prev, solution: correctArray }));
     console.log("Correct answer is:", correct);
   }, []);
+  //   if (gameState.status !== "playing") return;
 
-  useEffect(() => {
-    if (gameState.status !== "playing") return;
+  //   window.addEventListener("keydown", handleKeyDown);
 
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [gameState.status, handleKeyDown]);
+  //   return () => {
+  //     window.removeEventListener("keydown", handleKeyDown);
+  //   };
+  // }, [gameState.status, handleKeyDown]);
 
   return (
     <div className="flex flex-col items-center space-y-2 m-2">
