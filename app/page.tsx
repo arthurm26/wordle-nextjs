@@ -23,11 +23,11 @@ export default function Wordle() {
   const [currentGuess, setCurrentGuess] = useState<number>(0);
   const [gameState, setGameState] = useState<GameState>({
     solution: [],
-    attempts: attempts,
     currentNumGuess: 1,
     maxNumGuesses: 6,
-    status: MatchStatus.Playing,
   });
+
+  const status = getGameStatus({ attempts, currentGuess });
 
   useKeyHandler({
     setAttempts,
@@ -35,31 +35,8 @@ export default function Wordle() {
     gameState,
     attempts,
     setCurrentGuess,
+    status,
   });
-
-  useEffect(() => {
-    if (currentGuess === 0) return;
-
-    const previousGuess = attempts[currentGuess - 1];
-
-    if (!previousGuess) return;
-
-    const allCorrect = previousGuess.letters.every(
-      (ltr) => ltr.match === "correct",
-    );
-
-    if (allCorrect) {
-      setGameState((prevGameState) => ({
-        ...prevGameState,
-        status: MatchStatus.Won,
-      }));
-    } else if (currentGuess === maxNumGuesses) {
-      setGameState((prevGameState) => ({
-        ...prevGameState,
-        status: MatchStatus.Lost,
-      }));
-    }
-  }, [attempts, currentGuess]);
 
   useEffect(() => {
     const correct = generate({ minLength: 5, maxLength: 5 }) as string;
@@ -80,12 +57,35 @@ export default function Wordle() {
           </div>
         ))}
       </div>
-      {gameState.status === MatchStatus.Lost && (
+      {status === MatchStatus.Lost && (
         <div>You lost, the word was: {gameState.solution.join("")}</div>
       )}
-      {gameState.status === MatchStatus.Won && (
-        <div>Winner, winner, chicken dinner!</div>
-      )}
+      {status === MatchStatus.Won && <div>Winner, winner, chicken dinner!</div>}
     </div>
   );
+}
+
+function getGameStatus({
+  attempts,
+  currentGuess,
+}: {
+  attempts: GuessState[];
+  currentGuess: number;
+}): MatchStatus {
+  if (currentGuess === 0) return MatchStatus.Playing;
+
+  const previousGuess = attempts[currentGuess - 1];
+
+  if (!previousGuess) return MatchStatus.Playing;
+
+  const allCorrect = previousGuess.letters.every(
+    (ltr) => ltr.match === "correct",
+  );
+
+  if (allCorrect) {
+    return MatchStatus.Won;
+  } else if (currentGuess === maxNumGuesses) {
+    return MatchStatus.Lost;
+  }
+  return MatchStatus.Playing;
 }

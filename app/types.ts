@@ -1,9 +1,7 @@
 export type GameState = {
   solution: string[];
-  attempts: GuessState[];
   currentNumGuess: number;
   maxNumGuesses: number;
-  status: MatchStatus;
 };
 
 export enum MatchStatus {

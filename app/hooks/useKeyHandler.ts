@@ -1,5 +1,5 @@
 import { useEffect, useCallback, Dispatch, SetStateAction } from "react";
-import { GameState, GuessState, MatchState } from "../types";
+import { GameState, GuessState, MatchState, MatchStatus } from "../types";
 
 export default function useKeyHandler({
   setAttempts,
@@ -7,12 +7,14 @@ export default function useKeyHandler({
   gameState,
   attempts,
   setCurrentGuess,
+  status,
 }: {
   setAttempts: Dispatch<SetStateAction<GuessState[]>>;
   currentGuess: number;
   gameState: GameState;
   attempts: GuessState[];
   setCurrentGuess: Dispatch<SetStateAction<number>>;
+  status: MatchStatus;
 }) {
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -98,12 +100,12 @@ export default function useKeyHandler({
   );
 
   useEffect(() => {
-    if (gameState.status !== "playing") return;
+    if (status !== MatchStatus.Playing) return;
 
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [gameState.status, handleKeyDown]);
+  }, [status, handleKeyDown]);
 }
