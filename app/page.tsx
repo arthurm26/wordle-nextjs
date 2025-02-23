@@ -1,101 +1,175 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useCallback, useEffect, useState } from "react";
+import { generate } from "random-words";
+import { GameState, MatchStatus, MatchState, GuessState } from "@/app/types";
+import { Guess } from "@/app/components/Guess";
+
+const maxNumGuesses = 6;
+
+export default function Wordle() {
+  const [attempts, setAttempts] = useState<GuessState[]>(
+    new Array(maxNumGuesses).fill({
+      letters: [
+        { letter: "", match: MatchState.Unknown },
+        { letter: "", match: MatchState.Unknown },
+        { letter: "", match: MatchState.Unknown },
+        { letter: "", match: MatchState.Unknown },
+        { letter: "", match: MatchState.Unknown },
+      ],
+    }),
+  );
+  const [currentGuess, setCurrentGuess] = useState<number>(0);
+  const [gameState, setGameState] = useState<GameState>({
+    solution: [],
+    attempts: attempts,
+    currentNumGuess: 1,
+    maxNumGuesses: 6,
+    status: MatchStatus.Playing,
+  });
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key === "Backspace") {
+        setAttempts((prevAttempts) => {
+          const firstEmptyLetterIdx = prevAttempts[
+            currentGuess
+          ].letters.findIndex((idx) => idx.letter === "");
+
+          const lastLetterIdx =
+            firstEmptyLetterIdx === -1 ? 4 : firstEmptyLetterIdx - 1;
+
+          const updatedCurrentGuess = prevAttempts[currentGuess].letters.map(
+            (letter, index) => {
+              if (lastLetterIdx === index) {
+                return { ...letter, letter: "" };
+              }
+              return letter;
+            },
+          );
+          return prevAttempts.map((attempt, index) =>
+            index === currentGuess
+              ? { ...attempt, letters: updatedCurrentGuess }
+              : attempt,
+          );
+        });
+      }
+
+      if (event.key.match(/^[a-z]$/i)) {
+        setAttempts((prevAttempts) => {
+          const firstEmptyLetterIdx = prevAttempts[
+            currentGuess
+          ].letters.findIndex((idx) => idx.letter === "");
+
+          const updatedCurrentGuess = prevAttempts[currentGuess].letters.map(
+            (letter, index) => {
+              if (firstEmptyLetterIdx == index) {
+                return { ...letter, letter: event.key.toUpperCase() };
+              }
+              return letter;
+            },
+          );
+
+          return prevAttempts.map((attempt, index) =>
+            index === currentGuess
+              ? { ...attempt, letters: updatedCurrentGuess }
+              : attempt,
+          );
+        });
+        return;
+      }
+
+      if (attempts[currentGuess].letters.some((e) => e.letter === "")) return;
+
+      if (event.key === "Enter") {
+        setAttempts((prevAttempts) => {
+          const updatedLetters = prevAttempts[currentGuess].letters.map(
+            (letter, index) => {
+              if (letter.letter === gameState.solution[index]) {
+                return { ...letter, match: MatchState.Correct };
+              }
+              if (!gameState.solution.includes(letter.letter)) {
+                return { ...letter, match: MatchState.Incorrect };
+              }
+              if (gameState.solution.includes(letter.letter)) {
+                return { ...letter, match: MatchState.Almost };
+              }
+              return { ...letter };
+            },
+          );
+          prevAttempts[currentGuess] = {
+            ...prevAttempts[currentGuess],
+            letters: updatedLetters,
+          };
+          return prevAttempts;
+        });
+        setCurrentGuess((prevCurrentGuess) => {
+          return (prevCurrentGuess += 1);
+        });
+      }
+    },
+    [gameState, attempts, currentGuess],
+  );
+
+  useEffect(() => {
+    if (currentGuess === 0) return;
+
+    const previousGuess = attempts[currentGuess - 1];
+
+    if (!previousGuess) return;
+
+    const allCorrect = previousGuess.letters.every(
+      (ltr) => ltr.match === "correct",
+    );
+
+    if (allCorrect) {
+      setGameState((prevGameState) => ({
+        ...prevGameState,
+        status: MatchStatus.Won,
+      }));
+    } else if (currentGuess === maxNumGuesses) {
+      setGameState((prevGameState) => ({
+        ...prevGameState,
+        status: MatchStatus.Lost,
+      }));
+    }
+  }, [attempts, currentGuess]);
+
+  useEffect(() => {
+    const correct = generate({ minLength: 5, maxLength: 5 }) as string;
+    const correctArray = correct.toUpperCase().split("");
+    setGameState((prev) => ({ ...prev, solution: correctArray }));
+    console.log("Correct answer is:", correct);
+  }, []);
+
+  useEffect(() => {
+    if (gameState.status !== "playing") return;
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [gameState.status, handleKeyDown]);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+    <div className="flex flex-col items-center space-y-2 m-2">
+      <h1>Wordle</h1>
+      <div className="space-y-4">
+        {attempts.map((guess, index) => (
+          <div className="flex space-x-4" key={index}>
+            {guess.letters.map((val, index) => (
+              <Guess key={index} letter={val} />
+            ))}
+          </div>
+        ))}
+      </div>
+      {gameState.status === MatchStatus.Lost && (
+        <div>You lost, the word was: {gameState.solution.join("")}</div>
+      )}
+      {gameState.status === MatchStatus.Won && (
+        <div>Winner, winner, chicken dinner!</div>
+      )}
     </div>
   );
 }
