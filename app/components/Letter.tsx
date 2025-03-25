@@ -8,7 +8,7 @@ export function Letter({ letter }: LetterProps) {
   return (
     <div
       data-testid="letter-element"
-      className={`w-12 h-12 border text-black text-center font-bold text-5xl ${letter.match === "correct" ? "bg-green-500" : "bg-gray-200"} ${letter.match === "incorrect" ? "bg-gray-700" : "bg-gray-200"} ${letter.match === "almost" ? "bg-yellow-300" : "bg-gray-200"}`}
+      className={`w-12 h-12 flex items-center justify-center border text-white text-center font-bold text-2xl ${letter.match === "correct" ? "bg-green-500 border-transparent" : letter.match === "incorrect" ? "bg-gray-700 border-transparent" : letter.match === "almost" ? "bg-yellow-500 border-transparent" : "bg-transparent border-gray-700"}`}
     >
       {letter.letter ?? ""}
     </div>
