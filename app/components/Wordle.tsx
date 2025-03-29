@@ -5,6 +5,7 @@ import { generate } from "random-words";
 import { GameState, MatchStatus, MatchState, GuessState } from "@/app/types";
 import { Letter } from "@/app/components/Letter";
 import useKeyHandler from "@/app/hooks/useKeyHandler";
+import { Keyboard } from "./Keyboard";
 
 const maxNumGuesses = 6;
 
@@ -29,7 +30,7 @@ export default function Wordle() {
 
   const status = getGameStatus({ attempts, currentGuess });
 
-  useKeyHandler({
+  const { handleClick } = useKeyHandler({
     setAttempts,
     currentGuess,
     gameState,
@@ -46,11 +47,19 @@ export default function Wordle() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center space-y-2 m-2">
-      <h1>Wordle</h1>
-      <div className="space-y-4">
+    <div className="flex flex-col place-items-center justify-center">
+      <div className="flex items-center m-3">
+        <h1>Arthur&apos;s Wordle</h1>
+        <button
+          className="absolute right-1 text-white bg-blue-500 px-4 py-2 rounded-md"
+          onClick={handleRefresh}
+        >
+          Refresh
+        </button>
+      </div>
+      <div className="space-y-2 m-3">
         {attempts.map((guess, index) => (
-          <div className="flex space-x-4" key={index}>
+          <div className="flex space-x-2" key={index}>
             {guess.letters.map((val, index) => (
               <Letter key={index} letter={val} />
             ))}
@@ -61,6 +70,7 @@ export default function Wordle() {
         <div>You lost, the word was: {gameState.solution.join("")}</div>
       )}
       {status === MatchStatus.Won && <div>Winner, winner, chicken dinner!</div>}
+      <Keyboard handleClick={handleClick} />
     </div>
   );
 }
@@ -89,3 +99,7 @@ function getGameStatus({
   }
   return MatchStatus.Playing;
 }
+
+const handleRefresh = () => {
+  window.location.reload();
+};

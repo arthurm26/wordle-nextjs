@@ -16,9 +16,9 @@ export default function useKeyHandler({
   setCurrentGuess: Dispatch<SetStateAction<number>>;
   status: MatchStatus;
 }) {
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === "Backspace") {
+  const processInput = useCallback(
+    (value: string) => {
+      if (value === "Backspace") {
         setAttempts((prevAttempts) => {
           const firstEmptyLetterIdx = prevAttempts[
             currentGuess
@@ -43,7 +43,7 @@ export default function useKeyHandler({
         });
       }
 
-      if (event.key.match(/^[a-z]$/i)) {
+      if (value.match(/^[a-z]$/i)) {
         setAttempts((prevAttempts) => {
           const firstEmptyLetterIdx = prevAttempts[
             currentGuess
@@ -52,7 +52,7 @@ export default function useKeyHandler({
           const updatedCurrentGuess = prevAttempts[currentGuess].letters.map(
             (letter, index) => {
               if (firstEmptyLetterIdx == index) {
-                return { ...letter, letter: event.key.toUpperCase() };
+                return { ...letter, letter: value.toUpperCase() };
               }
               return letter;
             },
@@ -69,7 +69,7 @@ export default function useKeyHandler({
 
       if (attempts[currentGuess].letters.some((e) => e.letter === "")) return;
 
-      if (event.key === "Enter") {
+      if (value === "Enter") {
         setAttempts((prevAttempts) => {
           const updatedLetters = prevAttempts[currentGuess].letters.map(
             (letter, index) => {
@@ -102,10 +102,24 @@ export default function useKeyHandler({
   useEffect(() => {
     if (status !== MatchStatus.Playing) return;
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      processInput(event.key);
+    };
+
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [status, handleKeyDown]);
+  }, [status, processInput]);
+
+  const handleClick = useCallback(
+    (value: string) => {
+      if (status !== MatchStatus.Playing) return;
+      processInput(value);
+    },
+    [status, processInput],
+  );
+
+  return { handleClick };
 }
