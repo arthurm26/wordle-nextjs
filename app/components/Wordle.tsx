@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { generate } from "random-words";
+import { getRandomWord } from "@/app/utils/getRandomWord";
 import { GameState, MatchStatus, MatchState, GuessState } from "@/app/types";
 import { Letter } from "@/app/components/Letter";
 import useKeyHandler from "@/app/hooks/useKeyHandler";
@@ -30,20 +30,20 @@ export default function Wordle() {
 
   const status = getGameStatus({ attempts, currentGuess });
 
-  const { handleClick } = useKeyHandler({
+  const keyHandlerProps = {
     setAttempts,
     currentGuess,
     gameState,
     attempts,
     setCurrentGuess,
     status,
-  });
+  };
+
+  const { handleClick } = useKeyHandler(keyHandlerProps);
 
   useEffect(() => {
-    const correct: string = generate({ minLength: 5, maxLength: 5 }) as string;
-    const correctArray = correct.toUpperCase().split("");
-    setGameState((prev) => ({ ...prev, solution: correctArray }));
-    console.log("Correct answer is:", correct);
+    const generatedAnswer = getRandomWord().toUpperCase().split("");
+    setGameState((prev) => ({ ...prev, solution: generatedAnswer }));
   }, []);
 
   return (
@@ -52,7 +52,9 @@ export default function Wordle() {
         <h1>Arthur&apos;s Wordle</h1>
         <button
           className="absolute right-1 text-white bg-blue-500 px-4 py-2 rounded-md"
-          onClick={handleRefresh}
+          onClick={() => {
+            window.location.reload();
+          }}
         >
           Refresh
         </button>
@@ -99,7 +101,3 @@ function getGameStatus({
   }
   return MatchStatus.Playing;
 }
-
-const handleRefresh = () => {
-  window.location.reload();
-};
