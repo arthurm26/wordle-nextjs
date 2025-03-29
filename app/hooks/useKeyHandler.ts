@@ -1,5 +1,5 @@
 import { useEffect, useCallback, Dispatch, SetStateAction } from "react";
-import { GameState, GuessState, MatchState, MatchStatus } from "../types";
+import { GameState, GuessState, MatchState, MatchStatus } from "@/app/types";
 
 export default function useKeyHandler({
   setAttempts,
@@ -71,25 +71,17 @@ export default function useKeyHandler({
 
       if (value === "Enter") {
         setAttempts((prevAttempts) => {
-          const updatedLetters = prevAttempts[currentGuess].letters.map(
-            (letter, index) => {
-              if (letter.letter === gameState.solution[index]) {
-                return { ...letter, match: MatchState.Correct };
-              }
-              if (!gameState.solution.includes(letter.letter)) {
-                return { ...letter, match: MatchState.Incorrect };
-              }
-              if (gameState.solution.includes(letter.letter)) {
-                return { ...letter, match: MatchState.Almost };
-              }
-              return { ...letter };
-            },
+          const evaluatedAttempt = evaluateAttempt(
+            gameState.solution,
+            prevAttempts,
+            currentGuess,
           );
-          prevAttempts[currentGuess] = {
-            ...prevAttempts[currentGuess],
-            letters: updatedLetters,
-          };
-          return prevAttempts;
+
+          return prevAttempts.map((attempt, index) =>
+            index === currentGuess
+              ? { ...attempt, letters: evaluatedAttempt }
+              : attempt,
+          );
         });
         setCurrentGuess((prevCurrentGuess) => {
           return (prevCurrentGuess += 1);
@@ -113,13 +105,58 @@ export default function useKeyHandler({
     };
   }, [status, processInput]);
 
-  const handleClick = useCallback(
-    (value: string) => {
-      if (status !== MatchStatus.Playing) return;
-      processInput(value);
-    },
-    [status, processInput],
-  );
+  const handleClick = (value: string) => {
+    if (status !== MatchStatus.Playing) return;
+    processInput(value);
+  };
 
   return { handleClick };
+}
+
+function evaluateAttempt(
+  answer: string[],
+  guesses: GuessState[],
+  attempt: number,
+) {
+  const letterCountMap = new Map<string, number>();
+
+  for (const letter of answer) {
+    letterCountMap.set(letter, (letterCountMap.get(letter) || 0) + 1);
+  }
+
+  const guessLetters = [...guesses[attempt].letters];
+
+  for (let i = 0; i < guessLetters.length; i++) {
+    if (guessLetters[i].letter === answer[i]) {
+      guessLetters[i] = {
+        ...guessLetters[i],
+        match: MatchState.Correct,
+      };
+      letterCountMap.set(
+        guessLetters[i].letter,
+        (letterCountMap.get(guessLetters[i].letter) ?? 0) - 1,
+      );
+    }
+  }
+
+  for (let i = 0; i < guessLetters.length; i++) {
+    if (guessLetters[i].match === MatchState.Correct) continue;
+
+    const letter = guessLetters[i].letter;
+    const count = letterCountMap.get(letter) ?? 0;
+
+    if (count > 0) {
+      guessLetters[i] = {
+        ...guessLetters[i],
+        match: MatchState.Almost,
+      };
+      letterCountMap.set(letter, (letterCountMap.get(letter) || 0) - 1);
+    } else {
+      guessLetters[i] = {
+        ...guessLetters[i],
+        match: MatchState.Incorrect,
+      };
+    }
+  }
+  return guessLetters;
 }
